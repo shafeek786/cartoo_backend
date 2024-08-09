@@ -1,7 +1,7 @@
-const Order = require("../models/orderModel");
-const Product = require("../models/productModel");
-const Address = require("../models/addressModel");
-const User = require("../models/userModel");
+const Order = require('../models/orderModel');
+const Product = require('../models/productModel');
+const Address = require('../models/addressModel');
+const User = require('../models/userModel');
 
 exports.createOrder = async (req, res) => {
   try {
@@ -44,7 +44,7 @@ exports.createOrder = async (req, res) => {
     )}`; // Example: "ORD-123456789"
 
     // Set payment status based on payment method (you can customize this logic)
-    let paymentStatus = paymentMethod === "COD" ? "Pending" : "Completed";
+    let paymentStatus = paymentMethod === 'COD' ? 'Pending' : 'Completed';
 
     // Create a new order
     const order = new Order({
@@ -52,7 +52,7 @@ exports.createOrder = async (req, res) => {
       products: productDetails,
       totalPrice,
       shippingAddress: address, // Use the fetched address
-      status: "Pending", // Default status
+      status: 'Pending', // Default status
       paymentMethod, // Use the provided payment method
       paymentStatus, // Set the payment status
       orderNumber, // Set the generated order number
@@ -63,7 +63,7 @@ exports.createOrder = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Order created successfully",
+      message: 'Order created successfully',
       order,
     });
   } catch (error) {
@@ -74,15 +74,14 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+//Get all orders
 exports.getOrders = async (req, res) => {
   try {
-    // Fetch orders with populated user information
     const orders = await Order.find()
-      .populate("user", "name") // Populate the user's name
-      .select("orderNumber user createdAt totalPrice paymentStatus"); // Select specific fields
+      .populate('user', 'name')
+      .select('orderNumber user createdAt totalPrice paymentStatus');
 
-    // Format the response data
-    const formattedOrders = orders.map((order) => ({
+    const formattedOrders = orders.map(order => ({
       orderNumber: order.orderNumber,
       userName: order.user.name,
       orderDate: order.createdAt,
@@ -93,6 +92,97 @@ exports.getOrders = async (req, res) => {
     return res.status(200).json({
       success: true,
       orders: formattedOrders,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//Get a single order by ID
+
+exports.getOrderById = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId)
+      .populate('user', 'name')
+      .populate('products.product', 'name rice');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//update an order by ID
+
+exports.updateOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, paymentStatus } = req.body;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+    if (status) order.status = status;
+    if (paymentStatus) order.paymentStatus = paymentStatus;
+
+    await order.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order has been updated successfully',
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//Remove order by ID
+
+// Delete an order by ID
+exports.deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    await order.remove();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order deleted successfully',
     });
   } catch (error) {
     return res.status(500).json({
