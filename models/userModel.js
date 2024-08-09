@@ -16,11 +16,11 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "customer",
+    default: "consumer",
   },
   isApproved: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   createdAt: {
     type: Date,

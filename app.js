@@ -1,5 +1,5 @@
-const express = require("express");
-const connectDB = require("./config/db");
+const express = require('express');
+const connectDB = require('./config/db');
 
 const app = express();
 
@@ -10,14 +10,15 @@ connectDB();
 app.use(express.json());
 
 // Define Routes
-app.use("/api/userAuth", require("./routes/userAuthRoutes"));
-app.use("/api/vendorAuth", require("./routes/vendorAuth"));
-app.use("/api/adminAuth", require("./routes/adminAuth"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/vendor", require("./routes/vendorRoutes"));
-app.use("/api/customer", require("./routes/customerRoutes"));
-app.use("/api/products", require("./routes/productRoutes"));
-app.use("/api/orders", require("./routes/orderRoutes"));
+app.use('/api/userAuth', require('./routes/userAuthRoutes'));
+app.use('/api/vendorAuth', require('./routes/vendorAuth'));
+app.use('/api/adminAuth', require('./routes/adminAuth'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/vendor', require('./routes/vendorRoutes'));
+app.use('/api/customer', require('./routes/customerRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('api/cart', require('./routes/cartRoutes'));
 
 const PORT = process.env.PORT || 3000;
 

@@ -113,7 +113,7 @@ exports.updateProduct = async (req, res) => {
 // Fetch all products
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find({ isApproved: true });
     res.status(200).json(products);
   } catch (err) {
     console.error(err);
