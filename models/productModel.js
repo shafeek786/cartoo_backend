@@ -1,58 +1,115 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
+  id: {
+    type: Number,
+    required: true,
+  },
   name: {
     type: String,
     required: true,
+  },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
   },
   description: {
     type: String,
     required: true,
   },
-  shortDescription: {
+  short_description: {
     type: String,
     required: true,
   },
-  store: {
+  store_id: {
+    type: String, // Adjust type as needed
+
+    required: true,
+  },
+  type: {
+    type: String,
+    default: 'simple',
+  },
+  unit: {
+    type: String,
+  },
+  weight: {
+    type: Number,
+  },
+  stock_status: {
+    type: String,
+    default: 'in_stock',
+  },
+  sku: {
     type: String,
     required: true,
   },
-  inventory: {
-    stockStatus: {
-      type: String,
-      default: "Out of Stock",
-    },
-    sku: {
-      type: String,
-    },
-    stockQuantity: {
-      type: Number,
-    },
-    price: {
-      type: Number,
-    },
-    discount: {
-      type: Number,
-    },
-    salePrice: {
-      type: Number,
-    },
-    saleStatus: {
-      type: Boolean,
-      default: false,
-    },
+  quantity: {
+    type: Number,
+    required: true,
   },
-  images: {
-    thumbnail: {
-      type: String,
-    },
-    productImage: {
-      type: String,
-    },
-    sizeChart: {
-      type: String,
-    },
+  price: {
+    type: Number,
+    required: true,
   },
+  discount: {
+    type: Number,
+  },
+  isSaleEnable: {
+    type: Boolean,
+    default: false,
+  },
+  saleStartsAt: {
+    type: Date,
+  },
+  saleExpiredAt: {
+    type: Date,
+  },
+  tags: {
+    type: [String],
+  },
+  categories: {
+    type: [String],
+    required: true,
+  },
+  isRandomRelatedProducts: {
+    type: Boolean,
+    default: false,
+  },
+  relatedProducts: {
+    type: [mongoose.Schema.Types.ObjectId], // Adjust type as needed
+    ref: 'Product',
+  },
+  crossSellProducts: {
+    type: [mongoose.Schema.Types.ObjectId], // Adjust type as needed
+    ref: 'Product',
+  },
+  product_thumbnail_id: {
+    type: String,
+  },
+  product_galleries_id: {
+    type: [String],
+  },
+  size_chart_image_id: {
+    type: String,
+  },
+  variants: [
+    {
+      type: mongoose.Schema.Types.Mixed, // Adjust type as needed
+    },
+  ],
+  variations: [
+    {
+      type: mongoose.Schema.Types.Mixed, // Adjust type as needed
+    },
+  ],
+  attributesIds: [
+    {
+      type: mongoose.Schema.Types.ObjectId, // Adjust type as needed
+      ref: 'Attribute',
+    },
+  ],
   seo: {
     metaTitle: {
       type: String,
@@ -60,10 +117,59 @@ const productSchema = new mongoose.Schema({
     metaDescription: {
       type: String,
     },
+    productMetaImageUrl: {
+      type: String,
+    },
   },
-  isApproved: {
+  safeCheckout: {
+    type: Boolean,
+    default: true,
+  },
+  secureCheckout: {
+    type: Boolean,
+    default: true,
+  },
+  socialShare: {
+    type: Boolean,
+    default: true,
+  },
+  encourageOrder: {
+    type: Boolean,
+    default: true,
+  },
+  encourageView: {
+    type: Boolean,
+    default: true,
+  },
+  isFreeShipping: {
     type: Boolean,
     default: false,
+  },
+  estimatedDeliveryText: {
+    type: String,
+  },
+  isReturn: {
+    type: Boolean,
+    default: false,
+  },
+  returnPolicyText: {
+    type: String,
+  },
+  isFeatured: {
+    type: Boolean,
+    default: false,
+  },
+  isTrending: {
+    type: Boolean,
+    default: false,
+  },
+  isReturn: {
+    type: Boolean,
+    default: true,
+  },
+  status: {
+    type: Number,
+    default: 1,
   },
   createdAt: {
     type: Date,
@@ -71,6 +177,6 @@ const productSchema = new mongoose.Schema({
   },
 });
 
-const Product = mongoose.model("Product", productSchema);
+const Product = mongoose.model('Product', productSchema);
 
 module.exports = Product;

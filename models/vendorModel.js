@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const vendorSchema = new mongoose.Schema({
   name: {
@@ -16,11 +16,32 @@ const vendorSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "vendor",
+    default: 'vendor',
   },
   isApproved: {
     type: Boolean,
     default: false,
+  },
+  storeName: {
+    type: String,
+    required: true,
+  },
+  storeDescription: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  country: {
+    type: String,
+    required: true,
+  },
+  country_code: {
+    type: String,
+    required: true,
   },
   createdAt: {
     type: Date,
@@ -28,6 +49,6 @@ const vendorSchema = new mongoose.Schema({
   },
 });
 
-const Vendor = mongoose.model("Vendor", vendorSchema);
+const Vendor = mongoose.model('Vendor', vendorSchema);
 
 module.exports = Vendor;

@@ -5,14 +5,14 @@ const User = require('../models/userModel');
 
 exports.createOrder = async (req, res) => {
   try {
-    const { userId, products, addressId, paymentMethod } = req.body;
+    const { userId, products, billing_address_id, paymentMethod } = req.body;
 
     // Fetch the address from the address collection
-    const address = await Address.findById(addressId);
+    const address = await Address.findById(billing_address_id);
     if (!address) {
       return res.status(404).json({
         success: false,
-        message: `Address with ID ${addressId} not found`,
+        message: `Address with ID ${billing_address_id} not found`,
       });
     }
 
@@ -21,11 +21,11 @@ exports.createOrder = async (req, res) => {
 
     // Loop through each product and calculate the total price
     for (let item of products) {
-      const product = await Product.findById(item.productId);
+      const product = await Product.findById(item.product_id);
       if (!product) {
         return res.status(404).json({
           success: false,
-          message: `Product with ID ${item.productId} not found`,
+          message: `Product with ID ${item.product_id} not found`,
         });
       }
 

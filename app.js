@@ -1,13 +1,23 @@
 const express = require('express');
 const connectDB = require('./config/db');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
-
-// Connect Database
+app.use(express.static(path.join(__dirname, ''))); // Connect Database
 connectDB();
 
 // Init Middleware
 app.use(express.json());
+//cors configuration
+
+app.use(
+  cors({
+    origin: ['http://localhost:4200'],
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
+    credentials: true,
+  })
+);
 
 // Define Routes
 app.use('/api/userAuth', require('./routes/userAuthRoutes'));
@@ -17,8 +27,11 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vendor', require('./routes/vendorRoutes'));
 app.use('/api/customer', require('./routes/customerRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/category', require('./routes/categoryRoutes'));
+app.use('/api/store', require('./routes/storeRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
-app.use('api/cart', require('./routes/cartRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/address', require('./routes/addressRoute'));
 
 const PORT = process.env.PORT || 3000;
 

@@ -16,7 +16,7 @@ const cartSchema = new mongoose.Schema({
       quantity: {
         type: Number,
         required: true,
-        min: 1, // Quantity should be at least 1
+        min: 1, 
       },
     },
   ],

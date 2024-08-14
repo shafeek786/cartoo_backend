@@ -1,0 +1,41 @@
+const Img = require('../models/imageModel');
+
+exports.addImage = async (req, res) => {
+  try {
+    console.log('Files:', req.files);
+
+    // Check if files were uploaded
+    if (!req.files) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    // Extract image URLs from the uploaded files
+    const original_url = req.files.map(file => file.filename);
+
+    console.log('imageUrls:', original_url);
+
+    const vendor_id = req.user.userId;
+
+    console.log('vendor id:', vendor_id);
+    // Create new Image documents for each uploaded file
+    const images = original_url.map(
+      original_url => new Img({ original_url, vendor_id })
+    );
+
+    // Save all images to the database
+    const savedImages = await Img.insertMany(images);
+
+    res
+      .status(201)
+      .json({ message: 'Images added successfully', data: savedImages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getImage = async (req, res) => {
+  const vendor_id = req.user.userId;
+  const images = await Img.find({ vendor_id });
+  res.status(201).json({ success: true, data: images });
+};
