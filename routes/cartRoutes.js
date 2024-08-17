@@ -15,6 +15,6 @@ router.delete(
   jwtAuth('consumer'),
   cartController.removeItem
 );
-router.post('/clear_cart', cartController.clearCart);
+router.get('/clear_cart', jwtAuth('consumer'), cartController.clearCart);
 
 module.exports = router;

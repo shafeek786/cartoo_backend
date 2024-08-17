@@ -5,9 +5,8 @@ exports.addToCart = async (req, res) => {
   try {
     console.log('add to cart', req.body.product_id);
 
-    const { product_id } = req.body;
+    const { product_id, quantity } = req.body;
     const userId = req.user.userId;
-    const quantity = 1;
     const product = await Product.findById(product_id);
     if (!product) {
       return res.status(404).json({
@@ -296,7 +295,8 @@ exports.removeItem = async (req, res) => {
 
 exports.clearCart = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.user.userId;
+    console.log(userId);
     const cart = await Cart.findOne({ user: userId });
     if (!cart) {
       return res.status(404).json({

@@ -4,11 +4,38 @@ const User = require('../models/userModel');
 exports.createAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
+    console.log(req.body);
+
+    // Create and save the new address
     const address = new Address({ ...req.body, user: userId });
     await address.save();
-    res.status(201).json({
+
+    // Fetch the user details for additional info if needed
+    const user = await User.findById(userId);
+    const addresses = await Address.find({ user: userId });
+    // Format the response to match getAddressById
+    const response = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      country_code: user.country_code,
+      phone: user.phone,
+      created_at: user.createdAt,
+      updated_at: user.updatedAt,
+      profile_image: user.profile_image, // assuming you have a profile_image field
+      addresses: addresses, // array of addresses
+      orders_count: user.orders_count, // additional fields
+      payment_account: user.payment_account,
+      point: user.point,
+      role: user.role,
+      status: user.status,
+      wallet: user.wallet,
+      vendor_wallet: user.vendor_wallet,
+    };
+
+    res.status(200).json({
       success: true,
-      data: address,
+      data: response,
     });
   } catch (error) {
     res.status(400).json({

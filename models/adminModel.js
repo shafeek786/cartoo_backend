@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const adminSchema = new mongoose.Schema({
   name: {
@@ -16,11 +16,11 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "admin",
+    default: 'admin',
   },
   isApproved: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   createdAt: {
     type: Date,
@@ -28,6 +28,6 @@ const adminSchema = new mongoose.Schema({
   },
 });
 
-const Admin = mongoose.model("Admin", adminSchema);
+const Admin = mongoose.model('Admin', adminSchema);
 
 module.exports = Admin;

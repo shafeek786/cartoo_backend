@@ -3,21 +3,40 @@ const Product = require('../models/productModel');
 const Address = require('../models/addressModel');
 const User = require('../models/userModel');
 
+// Create a new order
 exports.createOrder = async (req, res) => {
+  console.log('body: ', req.body);
   try {
-    const { userId, products, billing_address_id, paymentMethod } = req.body;
+    const {
+      products,
+      billing_address_id,
+      shipping_address_id,
+      payment_method,
+      delivery_description,
+    } = req.body;
+    const userId = req.user.userId;
 
-    // Fetch the address from the address collection
-    const address = await Address.findById(billing_address_id);
-    if (!address) {
+    // Fetch the billing and shipping addresses from the address collection
+    const billingAddress = await Address.findById(billing_address_id);
+    const shippingAddress = await Address.findById(shipping_address_id);
+
+    if (!billingAddress) {
       return res.status(404).json({
         success: false,
-        message: `Address with ID ${billing_address_id} not found`,
+        message: `Billing address with ID ${billing_address_id} not found`,
+      });
+    }
+
+    if (!shippingAddress) {
+      return res.status(404).json({
+        success: false,
+        message: `Shipping address with ID ${shipping_address_id} not found`,
       });
     }
 
     let totalPrice = 0;
     const productDetails = [];
+    let shipping = 0;
 
     // Loop through each product and calculate the total price
     for (let item of products) {
@@ -31,40 +50,70 @@ exports.createOrder = async (req, res) => {
 
       const priceForItem = product.price * item.quantity;
       totalPrice += priceForItem;
-
+      shipping = totalPrice > 50 ? 0 : 2.5;
+      console.log('thumbnail: ', product.product_thumbnail_id);
       productDetails.push({
-        product: item.productId,
+        product: item.product_id,
         quantity: item.quantity,
+        sub_total: priceForItem,
+        price: product.price,
+        product_thumbnail: product.product_thumbnail_id,
+        is_return: product.isReturn,
       });
     }
 
-    // Generate a random order number
-    const orderNumber = `ORD-${Math.floor(
-      100000000 + Math.random() * 900000000
-    )}`; // Example: "ORD-123456789"
+    // Generate a unique order number, ensuring it doesn't conflict
+    let orderNumber;
+    let isUnique = false;
 
-    // Set payment status based on payment method (you can customize this logic)
-    let paymentStatus = paymentMethod === 'COD' ? 'Pending' : 'Completed';
+    while (!isUnique) {
+      orderNumber = `ORD-${Math.floor(100000000 + Math.random() * 900000000)}`;
+      console.log(orderNumber);
+      const existingOrder = await Order.findOne({ order_number: orderNumber });
+      console.log(existingOrder);
+      if (!existingOrder) {
+        isUnique = true;
+      }
+    }
+    const initialOrderStatus = {
+      data: [
+        {
+          id: 1,
+          name: 'pending',
+          slug: 'pending',
+          created_by_id: userId,
+        },
+      ],
+      total: 1,
+    };
+    // Set payment status based on payment method
+    const paymentStatus = payment_method === 'cod' ? 'Pending' : 'Completed';
 
     // Create a new order
     const order = new Order({
       user: userId,
       products: productDetails,
-      totalPrice,
-      shippingAddress: address, // Use the fetched address
+      amount: totalPrice,
+      total: totalPrice + shipping,
+      shipping_total: shipping,
+      billing_address_id: billing_address_id,
+      shipping_address_id: shipping_address_id,
+      delivery_description: delivery_description,
       status: 'Pending', // Default status
-      paymentMethod, // Use the provided payment method
-      paymentStatus, // Set the payment status
-      orderNumber, // Set the generated order number
+      payment_method: payment_method,
+      payment_status: paymentStatus,
+      order_number: orderNumber,
+      order_status: initialOrderStatus,
     });
-
+    console.log('Generated order number:', orderNumber);
+    console.log('Order before saving:', order);
     // Save the order to the database
     await order.save();
 
     return res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      order,
+      data: order,
     });
   } catch (error) {
     return res.status(500).json({
@@ -74,24 +123,69 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-//Get all orders
+// Get all orders
 exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate('user', 'name')
-      .select('orderNumber user createdAt totalPrice paymentStatus');
+      .populate({
+        path: 'user',
+        select: 'name',
+      })
+      .populate({
+        path: 'products.product',
+        select: 'name price product_thumbnail', // Adjust as needed
+      })
+      .populate({
+        path: 'shipping_address_id',
+        select: 'street city state_name country pincode phone country_code', // Adjust as needed
+      })
+      .populate({
+        path: 'billing_address_id',
+        select: 'street city state_name country pincode phone country_code', // Adjust as needed
+      })
+      .select(
+        'order_number user created_at total amount shipping_total payment_status payment_method products delivery_description order_status'
+      );
 
-    const formattedOrders = orders.map(order => ({
-      orderNumber: order.orderNumber,
-      userName: order.user.name,
-      orderDate: order.createdAt,
-      totalAmount: order.totalPrice,
-      paymentStatus: order.paymentStatus,
-    }));
+    const formattedOrders = orders.map(order => {
+      const lastStatus =
+        order.order_status.data[order.order_status.data.length - 1];
+      return {
+        order_number: order.order_number,
+        userName: order.user.name,
+        orderDate: order.created_at,
+        totalAmount: order.total_price,
+        payment_status: order.payment_status,
+        payment_method: order.payment_method,
+        order_status: lastStatus,
+        products: order.products.map(item => ({
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+          sub_total: item.sub_total, // Include if needed
+          product_thumbnail: item.product_thumbnail, // Add product thumbnail URL
+          is_return: item.is_return,
+          is_refunded: item.is_refunded,
+        })),
+        billing_address: order.billing_address_id,
+        shipping_address: order.shipping_address_id,
+        invoice_url: order.invoice_url, // Add if applicable
+        delivery_description: order.delivery_description, // Add if applicable
+        points_amount: order.points_amount, // Add if applicable
+        wallet_balance: order.wallet_balance, // Add if applicable
+        coupon_total_discount: order.coupon_total_discount, // Add if applicable
+        amount: order.amount, // Add if applicable
+        shipping_total: order.shipping_total, // Add if applicable
+        tax_total: order.tax_total, // Add if applicable
+        total: order.total, // Add if applicable
+      };
+    });
+    console.log('complete orders: ', orders);
 
+    console.log('orders: ', formattedOrders);
     return res.status(200).json({
       success: true,
-      orders: formattedOrders,
+      data: formattedOrders,
     });
   } catch (error) {
     return res.status(500).json({
@@ -101,14 +195,13 @@ exports.getOrders = async (req, res) => {
   }
 };
 
-//Get a single order by ID
-
+// Get a single order by ID
 exports.getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
     const order = await Order.findById(orderId)
       .populate('user', 'name')
-      .populate('products.product', 'name rice');
+      .populate('products.product', 'name price');
 
     if (!order) {
       return res.status(404).json({
@@ -119,7 +212,7 @@ exports.getOrderById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      order,
+      data: order,
     });
   } catch (error) {
     return res.status(500).json({
@@ -129,12 +222,11 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-//update an order by ID
-
+// Update an order by ID
 exports.updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { status, paymentStatus } = req.body;
+    const { status, payment_status } = req.body;
 
     const order = await Order.findById(orderId);
 
@@ -144,8 +236,9 @@ exports.updateOrder = async (req, res) => {
         message: 'Order not found',
       });
     }
+
     if (status) order.status = status;
-    if (paymentStatus) order.paymentStatus = paymentStatus;
+    if (payment_status) order.payment_status = payment_status;
 
     await order.save();
 
@@ -162,8 +255,6 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
-//Remove order by ID
-
 // Delete an order by ID
 exports.deleteOrder = async (req, res) => {
   try {
@@ -178,7 +269,9 @@ exports.deleteOrder = async (req, res) => {
       });
     }
 
-    await order.remove();
+    // Soft delete by setting the deleted_at field
+    order.deleted_at = new Date();
+    await order.save();
 
     return res.status(200).json({
       success: true,
