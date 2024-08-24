@@ -1,7 +1,15 @@
 const mongoose = require('mongoose');
 
 const vendorSchema = new mongoose.Schema({
+  store_name: {
+    type: String,
+    required: true,
+  },
   name: {
+    type: String,
+    required: true,
+  },
+  store_logo: {
     type: String,
     required: true,
   },
@@ -10,6 +18,7 @@ const vendorSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  pincode: { type: Number, required: true },
   password: {
     type: String,
     required: true,
@@ -22,11 +31,15 @@ const vendorSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  storeName: {
+
+  description: {
     type: String,
     required: true,
   },
-  storeDescription: {
+  country_code: {
+    type: Number,
+  },
+  email: {
     type: String,
     required: true,
   },
@@ -35,14 +48,26 @@ const vendorSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  country: {
+  address: {
     type: String,
     required: true,
   },
-  country_code: {
+  city: {
     type: String,
+  },
+  country_id: {
+    type: Number,
     required: true,
   },
+  state_id: {
+    type: Number,
+    required: true,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now(),
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,

@@ -1,4 +1,5 @@
 const Product = require('../models/productModel');
+const Category = require('../models/categoryModel');
 const slugify = require('slugify');
 const crypto = require('crypto');
 
@@ -17,9 +18,7 @@ async function generateUniqueSlug(name) {
 }
 exports.addProduct = async (req, res) => {
   try {
-    console.log(req.body);
     const productData = JSON.parse(req.body.product);
-
     // Handle image uploads
     const id = crypto.randomInt(100000, 999999);
     const slug = await generateUniqueSlug(productData.name);
@@ -103,7 +102,43 @@ exports.updateProduct = async (req, res) => {
 // Fetch all products
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const {
+      page,
+      paginate,
+      status,
+      price,
+      category,
+      sort,
+      sortBy,
+      rating,
+      attribute,
+      tag,
+      field,
+    } = req.query;
+
+    const query = {};
+
+    if (category) {
+      console.log('cat');
+      const categoryNames = category.split(',').map(name => name.trim());
+
+      const categories = await Category.find({
+        name: { $in: categoryNames },
+      })
+        .select('id')
+        .exec();
+      if (categories.length > 0) {
+        const categoryIds = categories.map(cat => cat.id);
+        query.categories = { $in: categoryIds };
+      } else {
+        return res.status(200).json({ data: [] });
+      }
+    }
+
+    const limit = parseInt(paginate, 10);
+    const skip = (page - 1) * limit;
+
+    const products = await Product.find(query).skip(skip).limit(limit);
     res.status(200).json({ data: products });
   } catch (err) {
     console.error(err);

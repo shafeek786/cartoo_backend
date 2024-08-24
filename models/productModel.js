@@ -1,3 +1,4 @@
+const { type } = require('express/lib/response');
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
@@ -5,27 +6,46 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  attributes_ids: [{ type: Number }],
+  categories: {
+    type: [Number],
+    required: true,
+  },
   name: {
     type: String,
     required: true,
-  },
-  slug: {
-    type: String,
-    required: true,
-    unique: true,
   },
   description: {
     type: String,
     required: true,
   },
+  encourage_order: { type: Boolean },
+  encourage_view: { type: Boolean },
+  estimated_delivery_text: { type: String },
+  is_featured: { type: Boolean },
+  is_free_shipping: { type: Boolean, default: false },
+  is_random_related_products: { type: Boolean, default: false },
+  is_return: { type: Boolean, default: false },
+  is_sale_enable: { type: Boolean, default: false },
+  is_trending: { type: Boolean, default: false },
+  meta_description: { type: String },
+  meta_title: { type: String },
+  social_share: { type: Boolean, default: true },
+
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+
   short_description: {
     type: String,
     required: true,
   },
   store_id: {
-    type: String, // Adjust type as needed
-
+    type: Number,
     required: true,
+    ref: 'Vendor',
   },
   type: {
     type: String,
@@ -60,6 +80,13 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  related_products: [{ type: String }],
+  return_policy_text: { type: String },
+  safe_checkout: { type: Boolean, default: true },
+  sale_expired_at: { type: Date },
+  sale_starts_at: { type: Date },
+  secure_checkout: { type: Boolean, default: true },
+
   saleStartsAt: {
     type: Date,
   },
@@ -78,11 +105,11 @@ const productSchema = new mongoose.Schema({
     default: false,
   },
   relatedProducts: {
-    type: [mongoose.Schema.Types.ObjectId], // Adjust type as needed
+    type: [mongoose.Schema.Types.ObjectId],
     ref: 'Product',
   },
   crossSellProducts: {
-    type: [mongoose.Schema.Types.ObjectId], // Adjust type as needed
+    type: [mongoose.Schema.Types.ObjectId],
     ref: 'Product',
   },
   product_thumbnail_id: {
@@ -94,6 +121,10 @@ const productSchema = new mongoose.Schema({
   size_chart_image_id: {
     type: String,
   },
+  product_meta_image_id: {
+    type: String,
+  },
+
   variants: [
     {
       type: mongoose.Schema.Types.Mixed, // Adjust type as needed
@@ -174,6 +205,9 @@ const productSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  tax_id: {
+    type: String,
   },
 });
 

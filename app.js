@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ['http://localhost:4200'],
+    origin: ['http://localhost:4200', 'http://localhost:59073'],
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
     credentials: true,
   })
@@ -22,8 +22,9 @@ app.use(
 // Define Routes
 app.use('/api/userAuth', require('./routes/userAuthRoutes'));
 app.use('/api/vendorAuth', require('./routes/vendorAuth'));
-app.use('/api/adminAuth', require('./routes/adminAuth'));
+app.use('/api/admin_auth', require('./routes/adminAuth'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('api/admin_auth', require('./routes/adminAuth'));
 app.use('/api/vendor', require('./routes/vendorRoutes'));
 app.use('/api/customer', require('./routes/customerRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -32,6 +33,9 @@ app.use('/api/store', require('./routes/storeRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/address', require('./routes/addressRoute'));
+app.use('/api/admin_images', require('./routes/adminImageRoute'));
+app.use('/api/admin_banner', require('./routes/admin/bannerRoutes'));
+app.use('/api/theme_options', require('./routes/admin/themeOptionsRoutes'));
 
 const PORT = process.env.PORT || 3000;
 

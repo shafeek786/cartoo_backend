@@ -5,7 +5,8 @@ const jwtAuth = require('../middleware/auth');
 
 // Define your routes
 router.post('/create_order', jwtAuth('consumer'), orderController.createOrder);
-router.get('/get_orders', orderController.getOrders);
+router.post('/verify-payment', orderController.verifyRazorpayPayment);
+router.get('/get_orders', jwtAuth('consumer'), orderController.getOrders);
 router.get('/get_order/:orderId', orderController.getOrderById);
 router.put('/update_order/:orderId', orderController.updateOrder);
 router.delete('/delete_order/:orderId', orderController.deleteOrder);

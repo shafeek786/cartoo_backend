@@ -1,4 +1,4 @@
-const Img = require('../models/imageModel');
+const Img = require('../models/adminImageModel');
 
 exports.addImage = async (req, res) => {
   try {

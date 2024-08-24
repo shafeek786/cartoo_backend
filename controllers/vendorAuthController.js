@@ -17,7 +17,6 @@ exports.register = async (req, res) => {
       country_code,
     } = req.body;
 
-    console.log(email);
     // Check for existing user with the same email
     const existingUser = await Vendor.findOne({ email });
 
@@ -62,7 +61,6 @@ exports.register = async (req, res) => {
 // Login a user
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
   try {
     const vendor = await Vendor.findOne({ email });
     if (!vendor) {
@@ -71,7 +69,6 @@ exports.login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, vendor.password);
     if (!isMatch) {
-      console.log('password mismatch');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign(
@@ -81,7 +78,6 @@ exports.login = async (req, res) => {
         expiresIn: '30d',
       }
     );
-    console.log(token);
     res.json({ token, userId: vendor._id, role: vendor.role });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

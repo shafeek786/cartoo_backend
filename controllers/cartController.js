@@ -3,8 +3,6 @@ const Product = require('../models/productModel');
 
 exports.addToCart = async (req, res) => {
   try {
-    console.log('add to cart', req.body.product_id);
-
     const { product_id, quantity } = req.body;
     const userId = req.user.userId;
     const product = await Product.findById(product_id);
@@ -49,7 +47,6 @@ exports.addToCart = async (req, res) => {
     const cartItems = updatedCart.items.map(item => {
       const itemTotal =
         (item.product.price || item.product.price) * item.quantity; // Calculate itemTotal here
-      console.log('sub total:', itemTotal);
       return {
         id: item._id, // Assuming the item has an _id field
         product_id: item.product._id, // Assuming the product has an _id field
@@ -64,7 +61,6 @@ exports.addToCart = async (req, res) => {
     });
 
     // Structure the response to match CartModel interface
-    console.log(cartItems);
     return res.status(200).json({
       success: true,
       items: cartItems,
@@ -120,7 +116,6 @@ exports.getCart = async (req, res) => {
     });
 
     // Structure the response to match CartModel interface
-    console.log(cartItems);
     return res.status(200).json({
       success: true,
       items: cartItems,
@@ -140,7 +135,6 @@ exports.updateCartItem = async (req, res) => {
   try {
     const { product_id, quantity } = req.body;
     const userId = req.user.userId;
-    console.log('check', product_id);
     // Find the cart for the given user
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
@@ -153,13 +147,10 @@ exports.updateCartItem = async (req, res) => {
 
     // Find the product in the cart
     const productIndex = cart.items.findIndex(item => {
-      console.log(item.product._id.toString(), product_id);
       return item.product._id.toString() === product_id;
     });
 
-    console.log(productIndex);
     if (productIndex > -1) {
-      console.log('qty');
       cart.items[productIndex].quantity += quantity;
       await cart.save();
 
@@ -227,26 +218,13 @@ exports.removeItem = async (req, res) => {
     }
 
     // Log the cart items for debugging
-    console.log(
-      'Cart Items before removal:',
-      JSON.stringify(cart.items, null, 2)
-    );
-    console.log('Product ID to remove:', productId);
 
     // Filter out the item to be removed
     cart.items = cart.items.filter(item => {
       const isMatch = item.product && item._id.toString() === productId;
-      console.log(
-        `Matching item with product ID ${item.product._id}:`,
-        isMatch
-      );
+
       return !isMatch;
     });
-
-    console.log(
-      'Cart Items after removal:',
-      JSON.stringify(cart.items, null, 2)
-    );
 
     await cart.save();
 
@@ -296,7 +274,6 @@ exports.removeItem = async (req, res) => {
 exports.clearCart = async (req, res) => {
   try {
     const userId = req.user.userId;
-    console.log(userId);
     const cart = await Cart.findOne({ user: userId });
     if (!cart) {
       return res.status(404).json({

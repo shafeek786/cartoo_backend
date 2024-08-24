@@ -84,7 +84,7 @@ const orderSchema = new mongoose.Schema(
     },
     payment_status: {
       type: String,
-      enum: ['Pending', 'Completed'],
+      enum: ['Pending', 'Completed', 'Awaiting Payment', 'Failed'],
       default: 'Pending',
     },
     order_status: {
@@ -114,6 +114,7 @@ const orderSchema = new mongoose.Schema(
         'Bank Transfer',
         'Cash on Delivery',
         'cod',
+        'razorpay',
       ],
       required: true,
     },

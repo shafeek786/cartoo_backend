@@ -8,9 +8,7 @@ const secretKey = process.env.JWT_SECRET || 'default_secret'; // Use your secret
 // Middleware function for JWT-based authentication with role checking
 const verifyToken = requiredRole => {
   return (req, res, next) => {
-    console.log('Middleware activated');
     const authHeader = req.headers.authorization;
-    console.log('Authorization Header:', authHeader);
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('error');
@@ -25,9 +23,7 @@ const verifyToken = requiredRole => {
     }
 
     try {
-      console.log('Secret Key:', secretKey);
       const decoded = jwt.verify(token, secretKey);
-      console.log('Decoded Token:', decoded);
       req.user = decoded;
 
       // Check if the user has the required role

@@ -17,7 +17,6 @@ exports.updateUserApproval = async (req, res) => {
 
     res.status(200).json({ message: 'User approval status updated', user });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 };

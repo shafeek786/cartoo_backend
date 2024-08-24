@@ -4,7 +4,6 @@ const User = require('../models/userModel');
 exports.createAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
-    console.log(req.body);
 
     // Create and save the new address
     const address = new Address({ ...req.body, user: userId });

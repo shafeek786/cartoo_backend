@@ -2,10 +2,15 @@ const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
 const Address = require('../models/addressModel');
 const User = require('../models/userModel');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET_ID,
+});
 
 // Create a new order
 exports.createOrder = async (req, res) => {
-  console.log('body: ', req.body);
   try {
     const {
       products,
@@ -16,42 +21,39 @@ exports.createOrder = async (req, res) => {
     } = req.body;
     const userId = req.user.userId;
 
-    // Fetch the billing and shipping addresses from the address collection
+    if (!userId) {
+      throw new Error('User ID is missing');
+    }
+
+    // Fetch addresses
     const billingAddress = await Address.findById(billing_address_id);
-    const shippingAddress = await Address.findById(shipping_address_id);
-
     if (!billingAddress) {
-      return res.status(404).json({
-        success: false,
-        message: `Billing address with ID ${billing_address_id} not found`,
-      });
+      throw new Error(
+        `Billing address with ID ${billing_address_id} not found`
+      );
     }
 
+    const shippingAddress = await Address.findById(shipping_address_id);
     if (!shippingAddress) {
-      return res.status(404).json({
-        success: false,
-        message: `Shipping address with ID ${shipping_address_id} not found`,
-      });
+      throw new Error(
+        `Shipping address with ID ${shipping_address_id} not found`
+      );
     }
 
+    // Calculate total price
     let totalPrice = 0;
     const productDetails = [];
     let shipping = 0;
 
-    // Loop through each product and calculate the total price
     for (let item of products) {
       const product = await Product.findById(item.product_id);
       if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: `Product with ID ${item.product_id} not found`,
-        });
+        throw new Error(`Product with ID ${item.product_id} not found`);
       }
 
       const priceForItem = product.price * item.quantity;
       totalPrice += priceForItem;
       shipping = totalPrice > 50 ? 0 : 2.5;
-      console.log('thumbnail: ', product.product_thumbnail_id);
       productDetails.push({
         product: item.product_id,
         quantity: item.quantity,
@@ -62,34 +64,15 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // Generate a unique order number, ensuring it doesn't conflict
-    let orderNumber;
-    let isUnique = false;
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: totalPrice * 100,
+      currency: 'INR',
+      receipt: `ORD_${Math.random()}`,
+      payment_capture: '1',
+    });
 
-    while (!isUnique) {
-      orderNumber = `ORD-${Math.floor(100000000 + Math.random() * 900000000)}`;
-      console.log(orderNumber);
-      const existingOrder = await Order.findOne({ order_number: orderNumber });
-      console.log(existingOrder);
-      if (!existingOrder) {
-        isUnique = true;
-      }
-    }
-    const initialOrderStatus = {
-      data: [
-        {
-          id: 1,
-          name: 'pending',
-          slug: 'pending',
-          created_by_id: userId,
-        },
-      ],
-      total: 1,
-    };
-    // Set payment status based on payment method
-    const paymentStatus = payment_method === 'cod' ? 'Pending' : 'Completed';
-
-    // Create a new order
+    // Create MongoDB order
     const order = new Order({
       user: userId,
       products: productDetails,
@@ -99,22 +82,91 @@ exports.createOrder = async (req, res) => {
       billing_address_id: billing_address_id,
       shipping_address_id: shipping_address_id,
       delivery_description: delivery_description,
-      status: 'Pending', // Default status
+      status: 'Pending',
       payment_method: payment_method,
-      payment_status: paymentStatus,
-      order_number: orderNumber,
-      order_status: initialOrderStatus,
+      payment_status: payment_method === 'cod' ? 'Pending' : 'Awaiting Payment',
+      order_number: razorpayOrder.id,
+      order_status: {
+        data: [
+          { id: 1, name: 'pending', slug: 'pending', created_by_id: userId },
+        ],
+        total: 1,
+      },
     });
-    console.log('Generated order number:', orderNumber);
-    console.log('Order before saving:', order);
-    // Save the order to the database
     await order.save();
+
+    // Respond with order details
+    const formattedOrder = {
+      order_number: order.order_number,
+      userName: req.user.name,
+      orderDate: order.created_at,
+      totalAmount: order.total,
+      payment_status: order.payment_status,
+      payment_method: order.payment_method,
+      order_status: order.order_status.data[order.order_status.data.length - 1],
+      products: order.products.map(item => ({
+        name: item.product.name,
+        price: item.price,
+        quantity: item.quantity,
+        sub_total: item.sub_total,
+        product_thumbnail: item.product_thumbnail,
+        is_return: item.is_return,
+      })),
+      billing_address: billingAddress,
+      shipping_address: shippingAddress,
+      delivery_description: order.delivery_description,
+    };
 
     return res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: order,
+      data: formattedOrder,
     });
+  } catch (error) {
+    console.error('Error in createOrder:', error); // Log the error
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Verify Razorpay Payment
+
+exports.verifyRazorpayPayment = async (req, res) => {
+  console.log(req.body);
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
+
+  try {
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_SECRET_ID)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+    console.log('Generated Signature:', generatedSignature);
+    console.log('Received Signature:', razorpay_signature);
+    if (generatedSignature === razorpay_signature) {
+      const order = await Order.findOne({ order_number: razorpay_order_id });
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found',
+        });
+      }
+
+      order.payment_status = 'Completed';
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified successfully',
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid signature',
+      });
+    }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -124,8 +176,12 @@ exports.createOrder = async (req, res) => {
 };
 
 // Get all orders
+
 exports.getOrders = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.paginate, 10) || 10;
+    const skip = (page - 1) * limit;
     const orders = await Order.find()
       .populate({
         path: 'user',
@@ -145,12 +201,16 @@ exports.getOrders = async (req, res) => {
       })
       .select(
         'order_number user created_at total amount shipping_total payment_status payment_method products delivery_description order_status'
-      );
-
+      )
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit);
+    const total = await Order.countDocuments();
     const formattedOrders = orders.map(order => {
       const lastStatus =
         order.order_status.data[order.order_status.data.length - 1];
       return {
+        count: total,
         order_number: order.order_number,
         userName: order.user.name,
         orderDate: order.created_at,
@@ -180,12 +240,11 @@ exports.getOrders = async (req, res) => {
         total: order.total, // Add if applicable
       };
     });
-    console.log('complete orders: ', orders);
 
-    console.log('orders: ', formattedOrders);
     return res.status(200).json({
       success: true,
       data: formattedOrders,
+      total: total,
     });
   } catch (error) {
     return res.status(500).json({
@@ -284,3 +343,215 @@ exports.deleteOrder = async (req, res) => {
     });
   }
 };
+
+// // Create a new order
+// exports.createOrder = async (req, res) => {
+//   try {
+//     const {
+//       products,
+//       billing_address_id,
+//       shipping_address_id,
+//       payment_method,
+//       delivery_description,
+//     } = req.body;
+//     const userId = req.user.userId;
+
+//     const billingAddress = await Address.findById(billing_address_id);
+//     const shippingAddress = await Address.findById(shipping_address_id);
+
+//     if (!billingAddress || !shippingAddress) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Billing or shipping address not found',
+//       });
+//     }
+
+//     let totalPrice = 0;
+//     const productDetails = [];
+//     let shipping = 0;
+
+//     for (let item of products) {
+//       const product = await Product.findById(item.product_id);
+//       if (!product) {
+//         return res.status(404).json({
+//           success: false,
+//           message: `Product with ID ${item.product_id} not found`,
+//         });
+//       }
+
+//       const priceForItem = product.price * item.quantity;
+//       totalPrice += priceForItem;
+//       shipping = totalPrice > 50 ? 0 : 2.5;
+//       productDetails.push({
+//         product: item.product_id,
+//         quantity: item.quantity,
+//         sub_total: priceForItem,
+//         price: product.price,
+//         product_thumbnail: product.product_thumbnail_id,
+//         is_return: product.isReturn,
+//       });
+//     }
+
+//     let orderNumber;
+//     let isUnique = false;
+
+//     while (!isUnique) {
+//       orderNumber = `ORD-${Math.floor(100000000 + Math.random() * 900000000)}`;
+//       const existingOrder = await Order.findOne({ order_number: orderNumber });
+//       if (!existingOrder) {
+//         isUnique = true;
+//       }
+//     }
+
+//     const initialOrderStatus = {
+//       data: [
+//         {
+//           id: 1,
+//           name: 'pending',
+//           slug: 'pending',
+//           created_by_id: userId,
+//         },
+//       ],
+//       total: 1,
+//     };
+
+//     const payment_status =
+//       payment_method === 'cod' ? 'Pending' : 'Awaiting Payment';
+
+//     const order = new Order({
+//       user: userId,
+//       products: productDetails,
+//       amount: totalPrice,
+//       total: totalPrice + shipping,
+//       shipping_total: shipping,
+//       billing_address_id,
+//       shipping_address_id,
+//       delivery_description,
+//       status: 'Pending',
+//       payment_method,
+//       payment_status,
+//       order_number: orderNumber,
+//       order_status: initialOrderStatus,
+//     });
+
+//     await order.save();
+//     console.log('order:    ', order);
+//     return res.status(201).json({
+//       success: true,
+//       message: 'Order created successfully',
+//       data: order,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// Get all orders
+
+// // Get a single order by ID
+// exports.getOrderById = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const order = await Order.findById(orderId)
+//       .populate('user', 'name')
+//       .populate('products.product', 'name price');
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Order not found',
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       data: order,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// // Update order status
+// exports.updateOrderStatus = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const { status } = req.body;
+
+//     const validStatuses = [
+//       'Pending',
+//       'Processing',
+//       'Shipped',
+//       'Delivered',
+//       'Cancelled',
+//     ];
+//     if (!validStatuses.includes(status)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid status',
+//       });
+//     }
+
+//     const order = await Order.findById(orderId);
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Order not found',
+//       });
+//     }
+
+//     order.order_status.data.push({
+//       id: order.order_status.total + 1,
+//       name: status,
+//       slug: status.toLowerCase(),
+//       created_by_id: req.user.userId,
+//     });
+//     order.order_status.total += 1;
+//     order.status = status;
+
+//     await order.save();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Order status updated successfully',
+//       data: order,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// // Delete an order
+// exports.deleteOrder = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const order = await Order.findById(orderId);
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Order not found',
+//       });
+//     }
+
+//     await Order.findByIdAndDelete(orderId);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Order deleted successfully',
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
