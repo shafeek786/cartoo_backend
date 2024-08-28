@@ -1,5 +1,5 @@
 const HomeBanner = require('../../models/homeBannerModel');
-
+const s3 = require('../../config/s3');
 // Create a new home banner
 exports.createHomeBanner = async (req, res) => {
   try {
@@ -25,12 +25,56 @@ exports.createHomeBanner = async (req, res) => {
   }
 };
 // Get all home banners
+
+const generateImageUrls = obj => {
+  Object.keys(obj).forEach(key => {
+    if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+      generateImageUrls(obj[key]);
+    } else if (key === 'image_key' && obj[key]) {
+      obj['image_url'] = s3.getSignedUrl('getObject', {
+        Bucket: 'cartoo', // replace with your bucket name
+        Key: obj[key],
+        Expires: 60 * 5, // URL expires in 5 minutes
+      });
+    }
+  });
+};
+
+// exports.getAllHomeBanners = async (req, res) => {
+//   try {
+//     const homeBanners = await HomeBanner.find();
+
+//     if (homeBanners.length > 0) {
+//       const lastHomeBanner = homeBanners[homeBanners.length - 1];
+
+//       // Recursively generate signed URLs for all image_key fields
+//       generateImageUrls(lastHomeBanner.content);
+
+//       const dataToSend = {
+//         id: 1,
+//         slug: 'paris',
+//         content: lastHomeBanner.content,
+//       };
+
+//       res.status(200).json(lastHomeBanner);
+//     } else {
+//       res.status(404).json({ message: 'No home banners found' });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error fetching home banners', error });
+//   }
+// };
+
 exports.getAllHomeBanners = async (req, res) => {
   try {
     const homeBanners = await HomeBanner.find();
 
     if (homeBanners.length > 0) {
       const lastHomeBanner = homeBanners[homeBanners.length - 1];
+      // console.log('before url: ', lastHomeBanner);
+      generateImageUrls(lastHomeBanner.content);
+      console.log('after url: ', lastHomeBanner);
+
       const dataToSend = {
         id: 1,
         slug: 'paris',

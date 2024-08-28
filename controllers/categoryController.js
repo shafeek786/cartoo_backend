@@ -1,9 +1,8 @@
 const { status } = require('express/lib/response');
 const Category = require('../models/categoryModel');
-
+const s3 = require('../config/s3');
 // Create a new category
 exports.createCategory = async (req, res) => {
-  console.log(req.body.payload);
   try {
     const {
       name,
@@ -31,12 +30,7 @@ exports.createCategory = async (req, res) => {
       parent_id,
       created_by_id,
       category_image: {
-        id: category_image.id,
-        collection_name: category_image.collection_name,
-        name: category_image.name,
-        file_name: category_image.file_name,
-        mime_type: category_image.mime_type,
-        original_url: category_image.original_url,
+        original_url: category_image,
       },
       category_icon: {
         original_url: category_icon,
@@ -65,10 +59,38 @@ exports.createCategory = async (req, res) => {
 };
 
 // Get all categories
+// exports.getAllCategories = async (req, res) => {
+//   try {
+//     const categories = await Category.find();
+//     res.status(200).json({ data: categories });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find();
-    res.status(200).json({ data: categories });
+    const responseCategories = categories.map(category => {
+      // Generate signed URL for category_image
+      const categoryImageUrl = s3.getSignedUrl('getObject', {
+        Bucket: 'cartoo',
+        Key: category.category_image.original_url,
+        Expires: 60 * 5, // URL expires in 5 minutes
+      });
+      // Generate signed URL for category_icon
+      const categoryIconUrl = s3.getSignedUrl('getObject', {
+        Bucket: 'cartoo',
+        Key: category.category_icon.original_url,
+        Expires: 60 * 5, // URL expires in 5 minutes
+      });
+      return {
+        ...category._doc,
+        category_image_url: { image_url: categoryImageUrl },
+        category_icon_url: { image_url: categoryIconUrl },
+      };
+    });
+    res.status(200).json({ data: responseCategories });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -4,13 +4,17 @@ const bcrypt = require('bcrypt');
 
 // Register a new user
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone, country_code } = req.body;
 
   try {
-    console.log(email);
     const existingUser = await User.findOne({ email });
+    const phoneExisting = await User.findOne({ phone });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
+    }
+
+    if (phoneExisting) {
+      return res.status(400).json({ message: 'Phone number already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -18,6 +22,8 @@ exports.register = async (req, res) => {
     const user = new User({
       name,
       email,
+      phone,
+      country_code,
       password: hashedPassword,
     });
 

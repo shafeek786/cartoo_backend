@@ -1,3 +1,4 @@
+const { type } = require('express/lib/response');
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema(
@@ -13,6 +14,10 @@ const orderSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Product',
           required: true,
+        },
+        name: {
+          type: String,
+          require: true,
         },
         quantity: {
           type: Number,

@@ -1,6 +1,8 @@
+const { type } = require('express/lib/response');
 const mongoose = require('mongoose');
 
 const vendorSchema = new mongoose.Schema({
+  id: { type: Number, required: true },
   store_name: {
     type: String,
     required: true,

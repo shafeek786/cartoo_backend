@@ -36,7 +36,9 @@ app.use('/api/address', require('./routes/addressRoute'));
 app.use('/api/admin_images', require('./routes/adminImageRoute'));
 app.use('/api/admin_banner', require('./routes/admin/bannerRoutes'));
 app.use('/api/theme_options', require('./routes/admin/themeOptionsRoutes'));
-
+app.use('/api/settings', require('./routes/settingsRoute'));
+app.use('/api/currencies', require('./routes/currencyRoutes'));
+app.use('/api/admin_order', require('./routes/admin/orderRoutes'));
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

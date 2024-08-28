@@ -154,7 +154,6 @@ exports.getUser = async (req, res) => {
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
-    console.log('check user');
     const users = await User.find({});
     res.status(200).json({ users });
   } catch (err) {

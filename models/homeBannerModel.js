@@ -13,6 +13,10 @@ const homeBannerSchema = new mongoose.Schema({
           image_url: {
             type: String,
           },
+          image_key: {
+            type: String,
+          },
+
           redirect_link: {
             link: {
               type: String,
@@ -37,6 +41,10 @@ const homeBannerSchema = new mongoose.Schema({
         image_url: {
           type: String,
         },
+        image_key: {
+          type: String,
+        },
+
         redirect_link: {
           link: {
             type: String,
@@ -50,6 +58,9 @@ const homeBannerSchema = new mongoose.Schema({
         image_url: {
           type: String,
         },
+        image_key: {
+          type: String,
+        },
         redirect_link: {
           link: {
             type: String,
@@ -61,6 +72,9 @@ const homeBannerSchema = new mongoose.Schema({
       },
       sub_banner_2: {
         image_url: {
+          type: String,
+        },
+        image_key: {
           type: String,
         },
         redirect_link: {
@@ -84,12 +98,22 @@ const homeBannerSchema = new mongoose.Schema({
         description: { type: String },
         category_ids: [{ type: Number }],
         image_url: { type: String, default: null },
+        image_key: {
+          type: String,
+        },
+        age_key: {
+          type: String,
+        },
         status: { type: Boolean },
         title: { type: String },
       },
       section3_two_column_banners: {
         banner_1: {
           image_url: { type: String },
+          image_key: {
+            type: String,
+          },
+
           redirect_link: {
             link: { type: String, default: undefined },
             link_type: { type: String },
@@ -98,6 +122,10 @@ const homeBannerSchema = new mongoose.Schema({
         },
         banner_2: {
           image_url: { type: String },
+          image_key: {
+            type: String,
+          },
+
           redirect_link: {
             link: { type: String, default: undefined },
             link_type: { type: String },
@@ -113,6 +141,10 @@ const homeBannerSchema = new mongoose.Schema({
       },
       section5_coupons: {
         image_url: { type: String },
+        image_key: {
+          type: String,
+        },
+
         redirect_link: {
           link: { type: String, default: undefined },
           link_type: { type: String },
@@ -123,6 +155,10 @@ const homeBannerSchema = new mongoose.Schema({
       section6_two_column_banners: {
         banner_1: {
           image_url: { type: String },
+
+          image_key: {
+            type: String,
+          },
           redirect_link: {
             link: { type: String, default: undefined },
             link_type: { type: String },
@@ -130,6 +166,10 @@ const homeBannerSchema = new mongoose.Schema({
         },
         banner_2: {
           image_url: { type: String },
+          image_key: {
+            type: String,
+          },
+
           redirect_link: {
             link: { type: String, default: undefined },
             link_type: { type: String },
@@ -145,6 +185,10 @@ const homeBannerSchema = new mongoose.Schema({
       },
       section8_full_width_banner: {
         image_url: { type: String },
+
+        image_key: {
+          type: String,
+        },
         redirect_link: {
           link: { type: String, default: undefined },
           link_type: { type: String },
@@ -167,6 +211,10 @@ const homeBannerSchema = new mongoose.Schema({
         left_side_banners: {
           banner_1: {
             image_url: { type: String },
+            image_key: {
+              type: String,
+            },
+
             redirect_link: {
               link: { type: String, default: undefined },
               link_type: { type: String },
@@ -175,6 +223,10 @@ const homeBannerSchema = new mongoose.Schema({
           },
           banner_2: {
             image_url: { type: String },
+            image_key: {
+              type: String,
+            },
+
             redirect_link: {
               link: { type: String, default: undefined },
               link_type: { type: String },
@@ -192,10 +244,16 @@ const homeBannerSchema = new mongoose.Schema({
     },
     news_letter: {
       image_url: { type: String },
+      image_key: {
+        type: String,
+      },
       status: { type: Boolean },
       sub_title: { type: String },
       title: { type: String },
     },
+  },
+  slug: {
+    type: String,
   },
 });
 

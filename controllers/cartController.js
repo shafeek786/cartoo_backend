@@ -1,5 +1,6 @@
 const Cart = require('../models/cartModel');
 const Product = require('../models/productModel');
+const s3 = require('../config/s3');
 
 exports.addToCart = async (req, res) => {
   try {
@@ -47,6 +48,15 @@ exports.addToCart = async (req, res) => {
     const cartItems = updatedCart.items.map(item => {
       const itemTotal =
         (item.product.price || item.product.price) * item.quantity; // Calculate itemTotal here
+
+      let thumbnail = null;
+      if (item.product.product_thumbnail_id) {
+        thumbnail = s3.getSignedUrl('getObject', {
+          Bucket: 'cartoo',
+          Key: item.product.product_thumbnail_id,
+          Expires: 60 * 5, // URL expires in 5 minutes
+        });
+      }
       return {
         id: item._id, // Assuming the item has an _id field
         product_id: item.product._id, // Assuming the product has an _id field
@@ -54,7 +64,10 @@ exports.addToCart = async (req, res) => {
         variation_id: item.variation ? item.variation._id : null,
         quantity: item.quantity,
         sub_total: itemTotal, // Use the itemTotal for sub_total
-        product: item.product, // The product details populated by Mongoose
+        product: {
+          ...item.product._doc,
+          thumbnail_image: { image_url: thumbnail },
+        },
         created_at: item.createdAt, // Assuming createdAt is available in item
         updated_at: item.updatedAt, // Assuming updatedAt is available in item
       };
@@ -90,17 +103,19 @@ exports.getCart = async (req, res) => {
       });
     }
 
-    // Calculate the total value of the cart
-    const total = cart.items.reduce((acc, item) => {
-      const itemTotal =
-        (item.product.sale_price || item.product.price) * item.quantity;
-      return acc + itemTotal;
-    }, 0);
-
-    // Transform the cart items to match the Cart interface
+    // Calculate the total value of the cart and include thumbnail images
     const cartItems = cart.items.map(item => {
       const itemTotal =
-        (item.product.sale_price || item.product.price) * item.quantity; // Calculate itemTotal here
+        (item.product.sale_price || item.product.price) * item.quantity;
+
+      let thumbnail = null;
+      if (item.product.product_thumbnail_id) {
+        thumbnail = s3.getSignedUrl('getObject', {
+          Bucket: 'cartoo',
+          Key: item.product.product_thumbnail_id,
+          Expires: 60 * 5, // URL expires in 5 minutes
+        });
+      }
 
       return {
         id: item._id, // Assuming the item has an _id field
@@ -109,11 +124,17 @@ exports.getCart = async (req, res) => {
         variation_id: item.variation ? item.variation._id : null,
         quantity: item.quantity,
         sub_total: itemTotal, // Use the itemTotal for sub_total
-        product: item.product, // The product details populated by Mongoose
+        product: {
+          ...item.product._doc,
+          thumbnail_image: { image_url: thumbnail },
+        }, // Include thumbnail image in product
         created_at: item.createdAt, // Assuming createdAt is available in item
         updated_at: item.updatedAt, // Assuming updatedAt is available in item
       };
     });
+
+    // Calculate the total value of the cart
+    const total = cartItems.reduce((acc, item) => acc + item.sub_total, 0);
 
     // Structure the response to match CartModel interface
     return res.status(200).json({
@@ -122,6 +143,7 @@ exports.getCart = async (req, res) => {
       total,
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: error.message,

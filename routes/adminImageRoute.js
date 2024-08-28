@@ -24,5 +24,12 @@ router.post(
 );
 
 router.get('/getImage', jwtAuth('admin'), adminImageController.getImage);
+
+router.post('/generate-upload-url', adminImageController.generateUploadUrls);
+router.post(
+  '/store-keys',
+  jwtAuth('admin'),
+  adminImageController.storeAttachmentKeys
+);
 // Export the router
 module.exports = router;

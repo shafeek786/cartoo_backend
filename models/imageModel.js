@@ -6,7 +6,7 @@ const imageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  vendor_id: {
+  user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',
   },
